@@ -1,0 +1,5 @@
+secrets.json
+bot-config.json
+*.apk
+Thumbs.db
+.DS_Store

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#8fc8ec" />
+    <meta name="color-scheme" content="light" />
+    <title>Шире Шаг</title>
+    <!-- Telegram Mini App bridge (ch.01 §2). Outside Telegram it is absent or inert; src/platform/telegram.ts degrades.
+         `defer`: runs before the (deferred) game module, in document order, but no longer blocks the first paint
+         (the loading screen) when telegram.org is slow or unreachable. The preview build drops this tag. -->
+    <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
+    <!-- HUD pixel font (non-blocking; the HUD falls back to a bold monospace stack). -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap"
+      media="print"
+      onload="this.media='all'"
+    />
+    <style>:root{--sa-top:env(safe-area-inset-top,0px);--sa-right:env(safe-area-inset-right,0px);--sa-bottom:env(safe-area-inset-bottom,0px);--sa-left:env(safe-area-inset-left,0px);--csa-top:0px;--csa-right:0px;--csa-bottom:0px;--csa-left:0px;--ui-top:calc(var(--sa-top) + var(--csa-top));--ui-right:calc(var(--sa-right) + var(--csa-right));--ui-bottom:calc(var(--sa-bottom) + var(--csa-bottom));--ui-left:calc(var(--sa-left) + var(--csa-left));--bg:#8fc8ec}html,body{background:var(--bg);overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;height:100%;margin:0;overflow:hidden}#app{position:fixed;inset:0}#game{touch-action:none;outline:none;width:100%;height:100%;display:block}#boot{z-index:50;padding:var(--ui-top) var(--ui-right) var(--ui-bottom) var(--ui-left);color:#fff;-webkit-font-smoothing:none;--ink:#2a2433;--o:-4px -4px 0 var(--ink), 0 -4px 0 var(--ink), 4px -4px 0 var(--ink), 4px 0 0 var(--ink), 4px 4px 0 var(--ink), 0 4px 0 var(--ink), -4px 4px 0 var(--ink), -4px 0 0 var(--ink), 0 8px 0 #14101e59;background:linear-gradient(#6fb6e6 0%,#a9d8f2 64%,#cfe9f6 64.2% 100%);flex-direction:column;justify-content:center;align-items:center;gap:26px;font-family:Silkscreen,"Press Start 2P",ui-monospace,SF Mono,Menlo,Consolas,monospace;font-weight:700;transition:opacity .35s;display:flex;position:fixed;inset:0}#boot.out{opacity:0;pointer-events:none}#boot:after{content:"";opacity:.55;z-index:-1;background:repeating-linear-gradient(90deg,#0000 0 94px,#6d6a72 94px 100px),repeating-linear-gradient(#b9b4ae 0 58px,#8d8780 58px 64px);height:36%;position:absolute;bottom:0;left:0;right:0}#boot .t{letter-spacing:.03em;text-shadow:var(--o);flex-direction:column;align-items:center;font-family:"Press Start 2P",Silkscreen,ui-monospace,monospace;font-size:clamp(34px,12vw,68px);line-height:1.15;display:flex;transform:rotate(-3deg)}#boot .t span:last-child{color:#ffcf1f}#boot .bar{border:3px solid var(--ink);background:#2a243359;border-radius:4px;width:min(62vw,280px);height:12px;overflow:hidden;box-shadow:0 4px #14101e4d}#boot .bar i{transform-origin:0;background:#ffcf1f;width:100%;height:100%;transition:transform .12s linear;display:block;transform:scaleX(.04);box-shadow:inset 0 -3px #e59a12,inset 0 2px #ffe98a}#boot .m{letter-spacing:.06em;min-height:1.2em;text-shadow:-2px -2px 0 var(--ink), 2px -2px 0 var(--ink), 2px 2px 0 var(--ink), -2px 2px 0 var(--ink);text-align:center;max-width:86vw;font-size:13px}#boot.err .m{color:#ffb0a8}</style>
+    <script type="module" crossorigin src="./assets/index-DrLcdDKV.js"></script>
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="game"></canvas>
+    </div>
+    <div id="boot" role="status" aria-live="polite">
+      <div class="t"><span>ШИРЕ</span><span>ШАГ</span></div>
+      <div class="bar"><i></i></div>
+      <div class="m">LOADING</div>
+    </div>
+    <script>
+      // Boot progress (src/ui/boot.ts drives it): the bar creeps toward the current stage's cap, so the long
+      // single-request stages (main chunk, physics WASM chunk) still move. No dependencies, no network.
+      (function () {
+        var root = document.getElementById('boot');
+        var bar = root.querySelector('.bar i');
+        var msg = root.querySelector('.m');
+        var shown = 0.04, cap = 0.3, ended = false;
+        var tick = setInterval(function () {
+          shown += (cap - shown) * 0.035;
+          bar.style.transform = 'scaleX(' + shown.toFixed(4) + ')';
+        }, 50);
+        window.__boot = {
+          stage: function (from, to, text) {
+            if (ended) return;
+            shown = Math.max(shown, from);
+            cap = Math.max(cap, to);
+            if (text != null) msg.textContent = text;
+          },
+          done: function () {
+            if (ended) return;
+            ended = true;
+            clearInterval(tick);
+            bar.style.transform = 'scaleX(1)';
+            setTimeout(function () {
+              root.classList.add('out');
+              setTimeout(function () { root.remove(); }, 400);
+            }, 120);
+          },
+          fail: function (text) {
+            ended = true;
+            clearInterval(tick);
+            root.classList.add('err');
+            msg.textContent = text;
+          },
+        };
+      })();
+    </script>
+  </body>
+</html>
